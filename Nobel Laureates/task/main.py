@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import requests
 import sys
+import numpy as np
 
 
 def check_data():
@@ -19,8 +20,13 @@ def main():
     check_data()
     df = pd.read_json('../Data/Nobel_laureates.json')
     df.dropna(subset=['gender'], inplace=True, ignore_index=True)
-    print(df.duplicated().any())
-    print(df.head(20)[['country', 'name']].to_dict())
+    df['place_of_birth'] = df['place_of_birth'].apply(lambda x: x.split(',')[-1].strip() if x and ',' in x else np.nan)
+    df['born_in'].replace('', np.nan, inplace=True)
+    df['born_in'].fillna(df['place_of_birth'], inplace=True)
+    df.dropna(subset='born_in', inplace=True, ignore_index=True)
+    df.replace(['US', 'United States', 'U.S.'], 'USA', inplace=True)
+    df.replace('United Kingdom', 'UK', inplace=True)
+    print(df['born_in'].to_list())
 
 
 if __name__ == '__main__':
