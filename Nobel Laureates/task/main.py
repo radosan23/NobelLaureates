@@ -25,7 +25,7 @@ def correct_birthplace(df):
     df.dropna(subset='born_in', inplace=True, ignore_index=True)
     df.replace(['US', 'United States', 'U.S.'], 'USA', inplace=True)
     df.replace('United Kingdom', 'UK', inplace=True)
-    df.drop(columns=['place_of_birth'])
+    df.drop(columns=['place_of_birth'], inplace=True)
     return df
 
 
@@ -40,6 +40,22 @@ def plot_countries(df):
     plt.show()
 
 
+def plot_male_female(df):
+    df['category'].replace('', np.nan, inplace=True)
+    df.dropna(subset='category', inplace=True)
+    data = df.groupby('category')['gender'].agg('value_counts')
+    x_axis = np.arange(len(data[::2]))
+    fig, ax = plt.subplots(figsize=(10, 10))
+    fig.suptitle('The total count of male and female Nobel Prize winners by categories', fontsize=20)
+    ax.set_xlabel('Category', fontsize=14)
+    ax.set_ylabel('Nobel Laureates Count', fontsize=14)
+    ax.bar(x_axis - 0.2, data[::2], width=0.4, color='blue', label='Males')
+    ax.bar(x_axis + 0.2, data[1::2], width=0.4, color='crimson', label='Females')
+    ax.set_xticks(x_axis, data[::2].index.get_level_values(0))
+    ax.legend()
+    plt.show()
+
+
 def main():
     # prepare dataset
     check_data()
@@ -49,8 +65,8 @@ def main():
     # calculate age of winning
     df['year_born'] = df['date_of_birth'].apply(lambda x: re.search(r'\d{4}', x).group()).astype('int64')
     df['age_of_winning'] = df['year'] - df['year_born']
-    # plot laureates by country
-    plot_countries(df)
+    # plot male/female by category
+    plot_male_female(df)
 
 
 if __name__ == '__main__':
