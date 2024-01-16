@@ -19,13 +19,20 @@ def check_data():
 
 
 def correct_birthplace(df):
+    df.dropna(subset=['gender'], inplace=True, ignore_index=True)
     df['place_of_birth'] = df['place_of_birth'].apply(lambda x: x.split(',')[-1].strip() if x and ',' in x else np.nan)
-    df['born_in'].replace('', np.nan, inplace=True)
+    df.replace('', np.nan, inplace=True)
     df['born_in'].fillna(df['place_of_birth'], inplace=True)
-    df.dropna(subset='born_in', inplace=True, ignore_index=True)
+    df.dropna(subset=['born_in', 'category'], inplace=True, ignore_index=True)
     df.replace(['US', 'United States', 'U.S.'], 'USA', inplace=True)
     df.replace('United Kingdom', 'UK', inplace=True)
     df.drop(columns=['place_of_birth'], inplace=True)
+    return df
+
+
+def age_of_win(df):
+    df['year_born'] = df['date_of_birth'].apply(lambda x: re.search(r'\d{4}', x).group()).astype('int64')
+    df['age_of_winning'] = df['year'] - df['year_born']
     return df
 
 
@@ -41,8 +48,6 @@ def plot_countries(df):
 
 
 def plot_male_female(df):
-    df['category'].replace('', np.nan, inplace=True)
-    df.dropna(subset='category', inplace=True)
     data = df.groupby('category')['gender'].agg('value_counts')
     x_axis = np.arange(len(data[::2]))
     fig, ax = plt.subplots(figsize=(10, 10))
@@ -56,17 +61,25 @@ def plot_male_female(df):
     plt.show()
 
 
+def plot_age(df):
+    data = df.pivot_table(index='category', values='age_of_winning', aggfunc=list)['age_of_winning']
+    data['All categories'] = data.values.sum()
+    fig, ax = plt.subplots(figsize=(10, 10))
+    fig.suptitle('Distribution of Ages by Category', fontsize=20)
+    ax.set_xlabel('Category', fontsize=14)
+    ax.set_ylabel('Age of Obtaining the Nobel Prize', fontsize=14)
+    ax.boxplot(data.to_list(), showmeans=True, labels=data.index)
+    plt.show()
+
+
 def main():
     # prepare dataset
     check_data()
     df = pd.read_json('../Data/Nobel_laureates.json')
-    df.dropna(subset=['gender'], inplace=True, ignore_index=True)
     df = correct_birthplace(df)
-    # calculate age of winning
-    df['year_born'] = df['date_of_birth'].apply(lambda x: re.search(r'\d{4}', x).group()).astype('int64')
-    df['age_of_winning'] = df['year'] - df['year_born']
-    # plot male/female by category
-    plot_male_female(df)
+    df = age_of_win(df)
+    # plot age by category
+    plot_age(df)
 
 
 if __name__ == '__main__':
